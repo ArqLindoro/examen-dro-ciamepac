@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examen de Práctica DRO y Corresponsables | CIAMEPAC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header institucional -->
+    <header class="bg-slate-800 border-b border-slate-700 py-4 px-6 shadow-md">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <span class="text-xs font-semibold tracking-wider text-amber-400 uppercase">CIAMEPAC • Puebla</span>
+                <h1 class="text-xl font-bold text-white">Demostración de Examen: DRO y Corresponsables</h1>
+            </div>
+            <button id="btn-admin-toggle" onclick="toggleAdminView()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600 transition">
+                📱 Ver Código QR de Acceso
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-3xl w-full mx-auto p-4 sm:p-6 my-8 flex-grow">
+
+        <!-- Vista 1: Código QR y Enlace para compartir -->
+        <section id="view-qr" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 text-center shadow-xl hidden">
+            <h2 class="text-2xl font-bold text-white mb-2">Escanea para Iniciar la Prueba</h2>
+            <p class="text-slate-400 text-sm mb-6">Comparte este código QR con los sustentantes. Las preguntas se mostrarán sin respuestas correctas, y al finalizar recibirás el reporte en tu WhatsApp.</p>
+            
+            <div class="flex justify-center mb-6">
+                <div id="qrcode" class="bg-white p-4 rounded-xl shadow-inner inline-block"></div>
+            </div>
+
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 max-w-md mx-auto flex items-center justify-between gap-2 mb-6">
+                <input type="text" id="share-url" readonly class="bg-transparent text-xs text-slate-300 w-full outline-none px-2" value="">
+                <button onclick="copyUrl()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs px-3 py-1.5 rounded-lg transition shrink-0">Copiar</button>
+            </div>
+
+            <button onclick="toggleAdminView()" class="text-amber-400 hover:underline text-sm font-medium">
+                ← Volver al examen de prueba
+            </button>
+        </section>
+
+        <!-- Vista 2: Cuestionario Interactivo -->
+        <section id="view-quiz" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
+            <div id="quiz-intro">
+                <div class="inline-block bg-amber-500/10 text-amber-400 text-xs font-semibold px-3 py-1 rounded-full mb-3 border border-amber-500/20">Evaluación de Conocimiento Normativo</div>
+                <h2 class="text-2xl font-bold text-white mb-3">Simulador Oficial DRO / DROC</h2>
+                <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                    Esta evaluación mide tu dominio del COREMÚN, Ley de Propiedad en Condominio y lineamientos constructivos en Puebla. Por favor, ingresa tu nombre completo antes de iniciar. Tus respuestas serán evaluadas al finalizar el cuestionario y el resultado se notificará de forma automatizada.
+                </p>
+
+                <div class="mb-6">
+                    <label class="block text-xs font-medium text-slate-300 mb-2">NOMBRE COMPLETO DEL SUSTENTANTE:</label>
+                    <input type="text" id="student-name" placeholder="Ej. Ing. Juan Pérez Hernández" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 focus:outline-none transition">
+                </div>
+
+                <button onclick="startQuiz()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold py-3 px-6 rounded-xl transition shadow-lg shadow-amber-500/10">
+                    Comenzar Evaluación
+                </button>
+            </div>
+
+            <div id="quiz-questions" class="hidden">
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
+                    <span id="question-progress" class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Pregunta 1 de 5</span>
+                    <span id="student-display" class="text-xs text-slate-400"></span>
+                </div>
+
+                <div id="question-container" class="mb-8">
+                    <!-- Se inyecta dinámicamente la pregunta -->
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <button id="btn-prev" onclick="prevQuestion()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed">
+                        Anterior
+                    </button>
+                    <button id="btn-next" onclick="nextQuestion()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-6 py-2.5 rounded-xl transition">
+                        Siguiente pregunta
+                    </button>
+                </div>
+            </div>
+
+            <div id="quiz-results" class="hidden text-center py-6">
+                <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 text-2xl">
+                    ✓
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">¡Examen Finalizado!</h3>
+                <p class="text-slate-300 text-sm mb-6">Tus respuestas han sido procesadas correctamente por el sistema.</p>
+
+                <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 max-w-sm mx-auto mb-6 text-left">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-slate-400">Aciertos:</span>
+                        <span id="res-score" class="font-bold text-emerald-400">0 / 5</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-400">Errores:</span>
+                        <span id="res-errors" class="font-bold text-rose-400">0 / 5</span>
+                    </div>
+                </div>
+
+                <!-- Campo para número de WhatsApp del evaluador/administrador -->
+                <div class="bg-slate-900/50 border border-slate-700 rounded-xl p-4 max-w-sm mx-auto mb-6">
+                    <label class="block text-xs font-medium text-slate-300 mb-2">Número de WhatsApp del Evaluador (Ej. 522221234567):</label>
+                    <input type="text" id="admin-whatsapp" value="522220000000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs focus:border-amber-500 focus:outline-none mb-3">
+                    <button onclick="sendWhatsAppReport()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs py-2.5 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                        📤 Enviar Reporte por WhatsApp
+                    </button>
+                </div>
+
+                <button onclick="resetQuiz()" class="text-slate-400 hover:underline text-xs">
+                    Realizar otro intento
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-800">
+        CIAMEPAC • Centro de Ingeniería, Arquitectura y Municipio del Estado de Puebla
+    </footer>
+
+    <!-- Script de lógica -->
+    <script>
+        const questions = [
+            {
+                q: "De acuerdo con el COREMÚN y la Ley de Construcciones del Estado de Puebla, ¿cuál es el periodo de vigencia de la responsabilidad administrativa del Director Responsable de Obra (DRO) y del Corresponsable (DROC) contado a partir de la fecha de expedición de la constancia de terminación de obra?",
+                options: ["1 año", "3 años", "5 años", "10 años"],
+                correct: 2 // 5 años
+            },
+            {
+                q: "En un régimen de propiedad en condominio de tipo vertical en el Municipio de Puebla, ¿cuál es la base fundamental que se debe emplear para realizar el cálculo del porcentaje de indiviso?",
+                options: ["La superficie privativa de construcción", "La superficie total del terreno", "El número de niveles de la torre", "Las áreas comunes de circulación"],
+                correct: 0 // La superficie privativa de construcción
+            },
+            {
+                q: "¿Cuál es la regla fundamental e improrrogable que debe cumplir la sumatoria total de los porcentajes de indiviso en la tabla correspondiente para que pueda ser aprobada en Catastro y Notaría?",
+                options: ["Al menos el 99.9%", "Exactamente el 100.00%", "Un rango entre 99% y 101%", "Lo que determine el perito valuador"],
+                correct: 1 // Exactamente el 100.00%
+            },
+            {
+                q: "De acuerdo con el Capítulo 17 del COREMÚN, ¿qué condición normativa debe cumplirse respecto a la intervención de los profesionales en una misma obra?",
+                options: ["Se puede ser DRO y DROC simultáneamente", "No se puede ser DRO y DROC en la misma obra", "El DRO puede asumir la responsiva estructural sin cédula", "El DROC firma únicamente catastro"],
+                correct: 1 // No se puede ser DRO y DROC en la misma obra
+            },
+            {
+                q: "¿Cuál es la frecuencia mínima obligatoria con la que el Director Responsable de Obra (DRO) debe visitar y supervisar físicamente el desarrollo de la obra, asentándolo en la bitácora?",
+                options: ["Diariamente", "Una vez a la semana", "Una vez al mes", "Únicamente al finalizar la estructura"],
+                correct: 1 // Una vez a la semana
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+        let studentName = "";
+
+        // Inicializar URL en input y QR
+        window.onload = function() {
+            const currentUrl = window.location.href;
+            document.getElementById('share-url').value = currentUrl;
+            
+            // Generar código QR
+            new QRCode(document.getElementById("qrcode"), {
+                text: currentUrl,
+                width: 180,
+                height: 180,
+                colorDark: "#0f172a",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        };
+
+        function toggleAdminView() {
+            const viewQuiz = document.getElementById('view-quiz');
+            const viewQr = document.getElementById('view-qr');
+            viewQuiz.classList.toggle('hidden');
+            viewQr.classList.toggle('hidden');
+        }
+
+        function copyUrl() {
+            const urlInput = document.getElementById('share-url');
+            urlInput.select();
+            document.execCommand('copy');
+            alert('¡Enlace copiado al portapapeles!');
+        }
+
+        function startQuiz() {
+            const nameInput = document.getElementById('student-name').value.trim();
+            if(!nameInput) {
+                alert('Por favor ingrese su nombre completo antes de iniciar.');
+                return;
+            }
+            studentName = nameInput;
+            document.getElementById('student-display').innerText = `Sustentante: ${studentName}`;
+            document.getElementById('quiz-intro').classList.add('hidden');
+            document.getElementById('quiz-questions').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestionIndex];
+            document.getElementById('question-progress').innerText = `Pregunta ${currentQuestionIndex + 1} de ${questions.length}`;
+            
+            let html = `<h3 class="text-base sm:text-lg font-semibold text-white mb-4 leading-snug">${q.q}</h3>`;
+            html += `<div class="space-y-3">`;
+            
+            q.options.forEach((opt, idx) => {
+                const isSelected = userAnswers[currentQuestionIndex] === idx;
+                const bgClass = isSelected ? 'bg-amber-500/20 border-amber-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500';
+                
+                html += `
+                    <label onclick="selectOption(${idx})" class="flex items-center gap-3 p-3.5 rounded-xl border ${bgClass} cursor-pointer transition">
+                        <input type="radio" name="q_opt" ${isSelected ? 'checked' : ''} class="text-amber-500 focus:ring-amber-500">
+                        <span class="text-sm">${opt}</span>
+                    </label>
+                `;
+            });
+            html += `</div>`;
+
+            document.getElementById('question-container').innerHTML = html;
+            
+            // Botones de navegación
+            document.getElementById('btn-prev').disabled = currentQuestionIndex === 0;
+            const btnNext = document.getElementById('btn-next');
+            if(currentQuestionIndex === questions.length - 1) {
+                btnNext.innerText = "Finalizar y Ver Resultado";
+            } else {
+                btnNext.innerText = "Siguiente pregunta";
+            }
+        }
+
+        function selectOption(idx) {
+            userAnswers[currentQuestionIndex] = idx;
+            loadQuestion();
+        }
+
+        function prevQuestion() {
+            if(currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if(userAnswers[currentQuestionIndex] === null) {
+                alert('Por favor seleccione una opción antes de continuar.');
+                return;
+            }
+
+            if(currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-questions').classList.add('hidden');
+            document.getElementById('quiz-results').classList.remove('hidden');
+
+            let score = 0;
+            questions.forEach((q, idx) => {
+                if(userAnswers[idx] === q.correct) score++;
+            });
+
+            const errors = questions.length - score;
+            document.getElementById('res-score').innerText = `${score} / 5`;
+            document.getElementById('res-errors').innerText = `${errors} / 5`;
+        }
+
+        function sendWhatsAppReport() {
+            let score = 0;
+            questions.forEach((q, idx) => {
+                if(userAnswers[idx] === q.correct) score++;
+            });
+            const errors = questions.length - score;
+
+            const adminPhone = document.getElementById('admin-whatsapp').value.trim();
+            const message = `📋 *REPORTE DE EXAMEN DRO - CIAMEPAC*\n\n👤 *Sustentante:* ${studentName}\n✅ *Aciertos:* ${score} / 5\n❌ *Errores:* ${errors} / 5\n\n_Evaluación realizada mediante simulador interactivo QR._`;
+
+            const whatsappUrl = `https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            userAnswers = new Array(questions.length).fill(null);
+            document.getElementById('quiz-results').classList.add('hidden');
+            document.getElementById('quiz-intro').classList.remove('hidden');
+            document.getElementById('student-name').value = '';
+        }
+    </script>
+</body>
+</html>
